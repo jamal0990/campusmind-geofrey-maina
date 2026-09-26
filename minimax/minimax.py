@@ -8,12 +8,15 @@ GRAPH = {
     "Library": ["Administration Block"],
     "Science Laboratory": ["Administration Block", "Student Affairs"],
     "Cafeteria": ["Main Gate", "Student Affairs"],
-    "Student Affairs": ["Science Laboratory", "Cafeteria"],
+    "Student Affairs": ["Cafeteria", "Science Laboratory"],
 }
 
 
 # Count terminal states evaluated by minimax
 terminal_count = 0
+
+# Count terminal states evaluated by alpha-beta
+alphabeta_terminal_count = 0
 
 
 def hop_distance(start, destination):
@@ -41,8 +44,7 @@ def hop_distance(start, destination):
 
 def utility(location):
     """
-    Utility function:
-    distance to Library - distance to Cafeteria
+    Utility = distance to Library - distance to Cafeteria.
     """
 
     return (
@@ -52,28 +54,20 @@ def utility(location):
 
 
 def legal_moves(location):
-    """Return all locations directly connected to the current location."""
+    """Return locations directly connected to the current location."""
 
     return GRAPH[location]
 
 
 def minimax(location, depth, maximizing_player):
-    """
-    Minimax algorithm for the CampusMind game.
-
-    MAX tries to maximize the utility.
-    MIN tries to minimize the utility.
-    The game lasts for 3 plies.
-    """
+    """Minimax algorithm."""
 
     global terminal_count
 
-    # Terminal state after 3 plies
     if depth == 3:
         terminal_count += 1
         return utility(location)
 
-    # MAX player's turn
     if maximizing_player:
         best_value = float("-inf")
 
@@ -83,13 +77,69 @@ def minimax(location, depth, maximizing_player):
 
         return best_value
 
-    # MIN player's turn
     else:
         best_value = float("inf")
 
         for move in legal_moves(location):
             value = minimax(move, depth + 1, True)
             best_value = min(best_value, value)
+
+        return best_value
+
+
+def alphabeta(location, depth, maximizing_player, alpha, beta):
+    """
+    Minimax with Alpha-Beta pruning.
+    """
+
+    global alphabeta_terminal_count
+
+    # Terminal state
+    if depth == 3:
+        alphabeta_terminal_count += 1
+        return utility(location)
+
+    # MAX player's turn
+    if maximizing_player:
+        best_value = float("-inf")
+
+        for move in legal_moves(location):
+            value = alphabeta(
+                move,
+                depth + 1,
+                False,
+                alpha,
+                beta
+            )
+
+            best_value = max(best_value, value)
+            alpha = max(alpha, best_value)
+
+            # Beta cutoff
+            if beta <= alpha:
+                break
+
+        return best_value
+
+    # MIN player's turn
+    else:
+        best_value = float("inf")
+
+        for move in legal_moves(location):
+            value = alphabeta(
+                move,
+                depth + 1,
+                True,
+                alpha,
+                beta
+            )
+
+            best_value = min(best_value, value)
+            beta = min(beta, best_value)
+
+            # Alpha cutoff
+            if beta <= alpha:
+                break
 
         return best_value
 
@@ -101,34 +151,36 @@ if __name__ == "__main__":
     print("Main Gate moves:", legal_moves("Main Gate"))
 
     print("Utility of Main Gate:", utility("Main Gate"))
-    print("Utility of Administration Block:",
-          utility("Administration Block"))
+    print(
+        "Utility of Administration Block:",
+        utility("Administration Block")
+    )
     print("Utility of Cafeteria:", utility("Cafeteria"))
 
     print("\nHop distances from Main Gate:")
     print("Library:", hop_distance("Main Gate", "Library"))
     print("Cafeteria:", hop_distance("Main Gate", "Cafeteria"))
 
+    # -------------------------
+    # MINIMAX
+    # -------------------------
+
     print("\nMinimax results:")
 
-    # Administration branch
     admin_value = minimax(
         "Administration Block",
         1,
         False
     )
 
-    # Cafeteria branch
     cafeteria_value = minimax(
         "Cafeteria",
         1,
         False
     )
 
-    # Reset counter before evaluating the complete game
     terminal_count = 0
 
-    # Complete game from Main Gate
     full_game_value = minimax(
         "Main Gate",
         0,
@@ -139,3 +191,25 @@ if __name__ == "__main__":
     print("Cafeteria branch:", cafeteria_value)
     print("Full game:", full_game_value)
     print("Terminal states evaluated:", terminal_count)
+
+    # -------------------------
+    # ALPHA-BETA
+    # -------------------------
+
+    print("\nAlpha-Beta results:")
+
+    alphabeta_terminal_count = 0
+
+    alphabeta_value = alphabeta(
+        "Main Gate",
+        0,
+        True,
+        float("-inf"),
+        float("inf")
+    )
+
+    print("Alpha-Beta value:", alphabeta_value)
+    print(
+        "Terminal states evaluated:",
+        alphabeta_terminal_count
+    )
