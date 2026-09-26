@@ -12,10 +12,8 @@ GRAPH = {
 }
 
 
-# Count terminal states evaluated by minimax
+# Counters
 terminal_count = 0
-
-# Count terminal states evaluated by alpha-beta
 alphabeta_terminal_count = 0
 
 
@@ -55,12 +53,11 @@ def utility(location):
 
 def legal_moves(location):
     """Return locations directly connected to the current location."""
-
     return GRAPH[location]
 
 
 def minimax(location, depth, maximizing_player):
-    """Minimax algorithm."""
+    """Standard Minimax algorithm."""
 
     global terminal_count
 
@@ -88,18 +85,14 @@ def minimax(location, depth, maximizing_player):
 
 
 def alphabeta(location, depth, maximizing_player, alpha, beta):
-    """
-    Minimax with Alpha-Beta pruning.
-    """
+    """Minimax with Alpha-Beta pruning."""
 
     global alphabeta_terminal_count
 
-    # Terminal state
     if depth == 3:
         alphabeta_terminal_count += 1
         return utility(location)
 
-    # MAX player's turn
     if maximizing_player:
         best_value = float("-inf")
 
@@ -115,13 +108,11 @@ def alphabeta(location, depth, maximizing_player, alpha, beta):
             best_value = max(best_value, value)
             alpha = max(alpha, best_value)
 
-            # Beta cutoff
             if beta <= alpha:
                 break
 
         return best_value
 
-    # MIN player's turn
     else:
         best_value = float("inf")
 
@@ -137,9 +128,43 @@ def alphabeta(location, depth, maximizing_player, alpha, beta):
             best_value = min(best_value, value)
             beta = min(beta, best_value)
 
-            # Alpha cutoff
             if beta <= alpha:
                 break
+
+        return best_value
+
+
+def flipped_minimax(location, depth, minimizing_player):
+    """
+    Minimax when MIN moves first.
+    """
+
+    if depth == 3:
+        return utility(location)
+
+    if minimizing_player:
+        best_value = float("inf")
+
+        for move in legal_moves(location):
+            value = flipped_minimax(
+                move,
+                depth + 1,
+                False
+            )
+            best_value = min(best_value, value)
+
+        return best_value
+
+    else:
+        best_value = float("-inf")
+
+        for move in legal_moves(location):
+            value = flipped_minimax(
+                move,
+                depth + 1,
+                True
+            )
+            best_value = max(best_value, value)
 
         return best_value
 
@@ -162,7 +187,7 @@ if __name__ == "__main__":
     print("Cafeteria:", hop_distance("Main Gate", "Cafeteria"))
 
     # -------------------------
-    # MINIMAX
+    # PART 2: MINIMAX
     # -------------------------
 
     print("\nMinimax results:")
@@ -193,7 +218,7 @@ if __name__ == "__main__":
     print("Terminal states evaluated:", terminal_count)
 
     # -------------------------
-    # ALPHA-BETA
+    # PART 3: ALPHA-BETA
     # -------------------------
 
     print("\nAlpha-Beta results:")
@@ -213,3 +238,28 @@ if __name__ == "__main__":
         "Terminal states evaluated:",
         alphabeta_terminal_count
     )
+
+    # -------------------------
+    # PART 4: MIN MOVES FIRST
+    # -------------------------
+
+    print("\nMIN moves first:")
+
+    flipped_value = flipped_minimax(
+        "Main Gate",
+        0,
+        True
+    )
+
+    print("New game value:", flipped_value)
+
+    print("\nMIN first move values:")
+
+    for move in legal_moves("Main Gate"):
+        move_value = flipped_minimax(
+            move,
+            1,
+            False
+        )
+
+        print(move, "value:", move_value)
